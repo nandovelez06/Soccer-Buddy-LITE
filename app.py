@@ -4,37 +4,39 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
-# 1. Configuración de página y estilos personalizados (Modo Oscuro)
+# 1. Configuración de página y estilos personalizados (Modo Oscuro Puro)
 st.set_page_config(page_title="Soccer Buddy LITE", layout="wide", page_icon="⚽")
 
-# Forzar estilos visuales en modo oscuro institucional (Verde oscuro y detalles dorados/crema)
+# Forzar estilos visuales en modo oscuro negro absoluto y barra lateral verde institucional
 st.markdown("""
     <style>
-        /* Fondo principal de la app y barra lateral */
-        .stApp { background-color: #031c15; }
-        [data-testid="stSidebar"] { background-color: #04241b; }
+        /* Fondo principal de la app (Negro Puro) y barra lateral (Verde Oscuro) */
+        .stApp { background-color: #0d0d0d; }
+        [data-testid="stSidebar"] { background-color: #031711; }
         
-        /* Modificar color de títulos y textos a crema/blanco */
+        /* Modificar color de títulos, etiquetas y textos a blanco/crema */
         h1, h2, h3, h4, p, span, label { color: #f5f2eb !important; }
         
-        /* Ajustar bordes y textos de inputs */
+        /* Ajustar bordes, textos e inputs de formularios */
         .stSlider, .stNumberInput, .stSelectbox, .stDateInput { color: #f5f2eb; }
         
-        /* Fondo de los contenedores de datos para que resalten */
+        /* Fondo de los contenedores de datos (Metrics) para alta visibilidad */
         div[data-testid="stMetricBlock"] {
-            background-color: #053326;
+            background-color: #07261d;
+            border: 1px solid #0d4234;
             border-radius: 8px;
             padding: 10px;
         }
     </style>
 """, unsafe_allow_html=True)
 
-DB_FILE = "historial_lite_analytics.csv"
+# Nombre de la base de datos cambiada a formato Excel (.xlsx)
+DB_FILE = "historial_lite_analytics.xlsx"
 FC_MAX_HISTORICA = 195  # Ajusta según tu frecuencia cardíaca máxima real
 
-# Cargar o inicializar la base de datos local
+# Cargar o inicializar la base de datos local en Excel
 if os.path.exists(DB_FILE):
-    df_historial = pd.read_csv(DB_FILE)
+    df_historial = pd.read_excel(DB_FILE)
     df_historial['Fecha'] = pd.to_datetime(df_historial['Fecha'])
 else:
     df_historial = pd.DataFrame(columns=[
@@ -55,12 +57,12 @@ with st.sidebar:
     st.divider()
     st.markdown("### 📝 Registrar Nueva Sesión")
     
-    # El formulario ahora vive completamente en la barra lateral desplegable
+    # Formulario compacto dentro de la barra lateral desplegable
     with st.form("form_registro", clear_on_submit=True):
         fecha = st.date_input("Fecha de la Sesión", datetime.today())
         tipo_sesion = st.selectbox("Tipo de Sesión", ["Partido Completo", "Fútbol 5/7", "Entrenamiento Intensivo", "Gimnasio/Físico"])
         duracion = st.number_input("Duración Total (minutos)", min_value=1, max_value=300, value=60)
-        esfuerzo = st.slider("Esfuerzo Percibido (sRPE)", 1, 10, 7, help="Escala del 1 al 10")
+        esfuerzo = st.slider("Esfuerzo Percibido (sRPE)", 1, 10, 7)
         
         st.markdown("**Métricas Físicas:**")
         distancia = st.number_input("Distancia Total (km)", min_value=0.0, max_value=30.0, value=6.2, step=0.1)
@@ -72,7 +74,7 @@ with st.sidebar:
         fc_max = st.number_input("Frecuencia Cardíaca Máxima (bpm)", min_value=40, max_value=220, value=182)
         calorias = st.number_input("Calorías Activas (kcal)", min_value=0, max_value=2500, value=650)
         
-        submit = st.form_submit_button("Guardar en Historial")
+        submit = st.form_submit_button("Guardar en Historial Excel")
         
         if submit:
             # --- FÓRMULAS AVANZADAS ---
@@ -101,18 +103,19 @@ with st.sidebar:
             }
             
             df_historial = pd.concat([df_historial, pd.DataFrame([nueva_fila])], ignore_index=True)
-            df_historial.to_csv(DB_FILE, index=False)
-            st.success("¡Métricas integradas!")
+            # Escritura limpia en el motor de Excel openpyxl
+            df_historial.to_excel(DB_FILE, index=False, engine='openpyxl')
+            st.success("¡Métricas guardadas en el Excel!")
             st.rerun()
 
-# --- CUERPO PRINCIPAL (DEDICADO A DASHBOARD Y SEMÁFORO) ---
+# --- CUERPO PRINCIPAL (DASHBOARD TOTALMENTE OSCURO) ---
 st.title("⚽ Soccer Buddy - Versión LITE Pro")
 st.subheader("Panel de Rendimiento Físico y Riesgo de Lesión")
 
 if not df_historial.empty:
     st.write("### 🛡️ Semáforo de Riesgo de Lesión (ACWR)")
     
-    # Ordenar cronológicamente
+    # Ordenar cronológicamente las cargas
     df_historial = df_historial.sort_values(by="Fecha").reset_index(drop=True)
     ultima_fecha = df_historial["Fecha"].max()
     
@@ -123,11 +126,11 @@ if not df_historial.empty:
     carga_cronica_promedio = carga_cronica_total / 4 if carga_cronica_total > 0 else 1
     acwr = round(carga_aguda / carga_cronica_promedio, 2) if carga_cronica_promedio > 0 else 0
     
-    # Clasificación del Semáforo
+    # Clasificación del Semáforo Científico
     if acwr < 0.8:
         estado_semaforo = "🟢 BAJO (Sub-entrenamiento)"
         color_banner = "#2ecc71"
-        detalle_semaforo = "Estás entrenando por debajo de tu base crónica. Riesgo bajo por fatiga, pero podrías perder condición."
+        detalle_semaforo = "Estás entrenando por debajo de tu base crónica. Riesgo bajo por fatiga, pero podrías perder condición física."
     elif 0.8 <= acwr <= 1.3:
         estado_semaforo = "🟢 ÓPTIMO (Zona Dulce)"
         color_banner = "#27ae60"
@@ -135,11 +138,11 @@ if not df_historial.empty:
     elif 1.3 < acwr <= 1.5:
         estado_semaforo = "🟡 MODERADO (Alerta de Fatiga)"
         color_banner = "#f1c40f"
-        detalle_semaforo = "Zona de precaución. La carga subió rápido esta semana. Revisa sobrecargas musculares."
+        detalle_semaforo = "Zona de precaución. La carga de entrenamiento subió muy rápido esta semana. Revisa sobrecargas musculares."
     else:
         estado_semaforo = "🔴 PELIGRO (Riesgo Crítico de Lesión)"
         color_banner = "#e74c3c"
-        detalle_semaforo = "¡Cuidado! Incremento drástico de fatiga a corto plazo. Se sugiere sesión de descarga activa o descanso."
+        detalle_semaforo = "¡Cuidado! Incremento drástico de fatiga a corto plazo. Se sugiere sesión de descarga activa o descanso absoluto."
 
     # Renderizado del bloque del Semáforo
     st.markdown(f"""
@@ -152,19 +155,19 @@ if not df_historial.empty:
     
     st.divider()
     
-    # Métricas de la última sesión
+    # Métricas de la última sesión ingresada
     st.write("### 📊 Indicadores Avanzados Calculados (Último Registro)")
     ultima_sesion = df_historial.iloc[-1]
     
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Carga TRIMP", f"{ultima_sesion['Carga TRIMP']}")
-    m2.metric("Eficiencia CV", f"{ultima_sesion['Eficiencia CV']} m/bpm")
+    m2.metric("Eficiencia CV", f"{ultima_sesion['Eficiencia CV']} m/bpm", help="Metros avanzados por latido cardíaco.")
     m3.metric("Densidad Sprints", f"{ultima_sesion['Densidad Sprints (sp/min)']} sp/m")
     m4.metric("Est. Trabajo HSR", f"{int(ultima_sesion['Distancia HSR Est (m)'])} m")
 
     st.divider()
 
-    # Gráfica evolutiva ocupando todo el ancho
+    # Gráfica evolutiva
     st.write("### 📈 Tendencia de Carga Física vs Carga Cardiovascular")
     st.line_chart(df_historial.set_index("Fecha")[["Carga TRIMP", "Carga sRPE"]])
     
@@ -176,4 +179,4 @@ if not df_historial.empty:
     st.dataframe(df_mostrar.sort_values(by="Fecha", ascending=False), use_container_width=True)
     
 else:
-    st.info("👋 ¡Módulo LITE activo! Despliega la barra lateral izquierda e ingresa tu primera sesión para calcular el semáforo de riesgo.")
+    st.info("👋 ¡Módulo LITE activo! Despliega la barra lateral izquierda e ingresa tu primera sesión para inicializar el libro de Excel y el semáforo dinámico.")
